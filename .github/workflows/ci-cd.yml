@@ -1,0 +1,38 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 코드 체크아웃
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Node.js 설치 (예시로 Node.js 사용하는 경우)
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      # 의존성 설치
+      - name: Install dependencies
+        run: npm install
+
+      # 테스트 실행
+      - name: Run tests
+        run: npm test
+
+      # 배포 (예시로 AWS, Heroku, 등 배포 명령어 추가)
+      - name: Deploy to Production
+        run: |
+          echo "Deploying application"
+          # 배포 명령어 추가 (예: AWS CLI, Heroku, 등)
