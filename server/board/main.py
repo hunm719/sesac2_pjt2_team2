@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routes.events import event_router
+from routes.events import board_router
 from contextlib import asynccontextmanager
 from database.connection import conn
 from fastapi.middleware.cors import CORSMiddleware  
@@ -14,7 +14,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-app.include_router(event_router, prefix="/event", tags=["Event"])
+app.include_router(board_router, prefix="/event", tags=["Event"])
 
 app.add_middleware(
     CORSMiddleware,

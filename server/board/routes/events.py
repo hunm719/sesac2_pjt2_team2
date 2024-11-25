@@ -2,61 +2,28 @@ from fastapi import APIRouter, HTTPException, status, Body, Depends
 from typing import List
 from database.connection import get_session
 from sqlmodel import select, Session
-from models.events import Event, EventUpdate, Comment
+from models.events import Board, BoardUpdate, Comment
 from sqlalchemy.orm import joinedload
 from fastapi.encoders import jsonable_encoder
 
+board_router = APIRouter()
 
 
-event_router = APIRouter()
+# 게시판 전체 조회 => GET /board/ => retrieve_all_boards()
+@board_router.get("/", response_model=List[Board])
+def retrieve_all_boards(session=Depends(get_session)) -> List[Board]:
+    statement = select(Board)
+    boards = session.exec(statement)
+    return boards
 
 
-events = []
+# 게시판 상세 조회 => GET /board/{id} => retrieve_board()
+@board_router.get("/{id}", response_model=Board)
+def retrieve_board(id: int, session=Depends(get_session)) -> Board:
+    board = session.query(Board).options(joinedload(Board.comments)).filter(Board.id == id).first()
 
-
-# 이벤트 전체(목록) 조회 => GET /event/ => retrive_all_events() 전체 게시글용. 이용자 전체 열려있어야함
-@event_router.get("/", response_model=List[Event])
-def retrive_all_events(session=Depends(get_session)) -> List[Event]:
-    statement = select(Event) # SQLModel의 select 함수를 이용해서 모든 데이터를 조회
-    events = session.exec(statement)
-    return events
-
-
-
-# 이벤트 상세 조회1 => GET /event/{id} => retrive_event() 게시글 1개 용. 이용자 전체 열려있어야함
-# @event_router.get("/{id}", response_model=Event)
-# def retrive_event(id: int, session=Depends(get_session)) -> Event:
-#     # for event in events:
-#     #     if event.id == id:
-#     #         return event
-
-#     # 데이터베이스에서 해당 ID의 데이터를 조회
-#     event = session.get(Event, id)  
-#     if event:
-#         return event
-        
-#     raise HTTPException(
-#         status_code=status.HTTP_404_NOT_FOUND,
-#         detail="일치하는 게시글이 존재하지 않습니다.",
-#     )
-
-
-# 이벤트 상세조회2
-@event_router.get("/{id}", response_model=Event)
-def retrive_event(id: int, session=Depends(get_session)) -> Event:
-    # 이벤트와 관련된 댓글을 함께 로드
-    # 에러가 발생하여 아래아래 코드로 교
-    # event = session.exec(
-    #     select(Event)
-    #     .options(joinedload(Event.comments))  # Event와 연결된 Comment들을 함께 로드
-    #     .where(Event.id == id)
-    # ).first()
-    #아래 코드로 교체됨
-    event = session.query(Event).options(joinedload(Event.comments)).filter(Event.id == id).first()
-
-
-    if event:
-        return event
+    if board:
+        return board
         
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
@@ -64,135 +31,103 @@ def retrive_event(id: int, session=Depends(get_session)) -> Event:
     )
 
 
-
-# 게시글 등록
-@event_router.post("/", status_code=status.HTTP_201_CREATED)
-def create_event(data: Event = Body(...), session=Depends(get_session)) -> dict:
-    # events.append(data)
-    session.add(data)  	# 데이터베이스에 데이터를 추가
-    session.commit()  	# 변경사항을 저장
-    session.refresh(data)  	# 최신 데이터로 갱신
-    return {"message": "이벤트가 정상적으로 등록되었습니다."}
+# 게시글 등록 => POST /board/ => create_board()
+@board_router.post("/", status_code=status.HTTP_201_CREATED)
+def create_board(data: Board = Body(...), session=Depends(get_session)) -> dict:
+    session.add(data)  # 데이터베이스에 데이터를 추가
+    session.commit()  # 변경사항을 저장
+    session.refresh(data)  # 최신 데이터로 갱신
+    return {"message": "게시글이 정상적으로 등록되었습니다."}
 
 
-# 이벤트 하나 삭제 => DELETE /event/{id} => delete_event() 게시글 삭제. 운영자 권한.
-@event_router.delete("/{id}")
-def delete_event(id: int, session=Depends(get_session)) -> dict:
-    # for event in events:
-    #     if event.id == id:
-    #         events.remove(event)
-    #         return {"message": "이벤트가 정상적으로 삭제되었습니다."}
-
-    event = session.get(Event, id)
-    if event:
-        session.delete(event)
+# 게시글 삭제 => DELETE /board/{id} => delete_board()
+@board_router.delete("/{id}")
+def delete_board(id: int, session=Depends(get_session)) -> dict:
+    board = session.get(Board, id)
+    if board:
+        session.delete(board)
         session.commit()
-        return {"message": "이벤트가 정상적으로 삭제되었습니다."}
+        return {"message": "게시글이 정상적으로 삭제되었습니다."}
 
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail="일치하는 이벤트가 존재하지 않습니다.",
+        detail="일치하는 게시글이 존재하지 않습니다.",
     )
 
 
-# 이벤트 전체 삭제 => DELETE /event/ => delete_all_events() 게시글 리셋. 운영자권한.
-@event_router.delete("/")
-def delete_all_events(session=Depends(get_session)) -> dict:
-    # events.clear()
+# 게시글 전체 삭제 => DELETE /board/ => delete_all_boards()
+@board_router.delete("/")
+def delete_all_boards(session=Depends(get_session)) -> dict:
+    statement = select(Board)
+    boards = session.exec(statement)
 
-    statement = select(Event)
-    events = session.exec(statement)
-
-    for event in events:
-        session.delete(event)
+    for board in boards:
+        session.delete(board)
 
     session.commit()
 
-    return {"message": "모든 이벤트가 정상적으로 삭제되었습니다."}
+    return {"message": "모든 게시글이 정상적으로 삭제되었습니다."}
 
 
+# 게시글 수정 => PUT /board/{id} => update_board()
+@board_router.put("/{id}", response_model=Board)
+def update_board(id: int, data: BoardUpdate, session=Depends(get_session)) -> Board:
+    board = session.get(Board, id)
+    if board:
+        board_data = data.dict(exclude_unset=True)
+        for key, value in board_data.items():
+            setattr(board, key, value)
 
-# 이벤트 수정 => PUT /event/{id} => update_event() 게시글 수정, 게시글 생성자 권한. 게시글id->유저id->해당 유저만 수정 가능하도록.
-@event_router.put("/{id}", response_model=Event)
-def update_event(id: int, data: EventUpdate, session=Depends(get_session)) -> Event:
-    event = session.get(Event, id)
-    if event:
-        # 요청 본문으로 전달된 내용 중 값이 있는 항목들만 추출해서 dict 타입으로 변환
-        event_data = data.dict(exclude_unset=True)
-        # 테이블에서 조회한 결과를 요청을 통해서 전달된 값으로 변경
-        for key, value in event_data.items():
-            setattr(event, key, value)
-
-        session.add(event)
+        session.add(board)
         session.commit()
-        session.refresh(event)
+        session.refresh(board)
 
-        return event
+        return board
     
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail="일치하는 이벤트가 존재하지 않습니다.",
+        detail="일치하는 게시글이 존재하지 않습니다.",
     )
 
-# # 코멘트 등록
-# @event_router.post("/{id}/comments", status_code=201, tags=["Comment"])
-# def add_comment(id: int, content: str = Body(...), user_id: int = Body(...), session: Session = Depends(get_session)):
-#     event = session.get(Event, id)
-#     if not event:
-#         raise HTTPException(status_code=404, detail="이벤트가 존재하지 않습니다.")
-    
-#     # 코멘트 생성
-#     comment = Comment(content=content, user_id=user_id, event_id=id)
-    
-#     session.add(comment)
-#     session.commit()
-#     session.refresh(comment)
-    
-#     return {"message": "코멘트가 정상적으로 등록되었습니다.", "comment": comment}
 
-# 코멘트 삭제
-@event_router.delete("/{event_id}/comments/{comment_id}", tags=["Comment"])
-def delete_comment(event_id: int, comment_id: int, session: Session = Depends(get_session)):
-    event = session.get(Event, event_id)
-    if not event:
-        raise HTTPException(status_code=404, detail="이벤트가 존재하지 않습니다.")
-    
-    comment = session.get(Comment, comment_id)
-    if comment and comment.event_id == event_id:
-        session.delete(comment)
-        session.commit()
-        return {"message": "코멘트가 정상적으로 삭제되었습니다."}
-    
-    raise HTTPException(status_code=404, detail="코멘트를 찾을 수 없거나 이벤트와 일치하지 않습니다.")
-
-
-
-
-# 위에거랑 과연 뭐가 맞을까
-@event_router.post("/{id}/comments", status_code=201, response_model=Comment, tags=["Comment"])
+# 코멘트 등록 => POST /board/{id}/comments => add_comment()
+@board_router.post("/{id}/comments", status_code=201, response_model=Comment, tags=["Comment"])
 def add_comment(id: int, content: str = Body(...), user_id: int = Body(...), session: Session = Depends(get_session)):
-    event = session.get(Event, id)
-    if not event:
-        raise HTTPException(status_code=404, detail="이벤트가 존재하지 않습니다.")
+    board = session.get(Board, id)
+    if not board:
+        raise HTTPException(status_code=404, detail="게시글이 존재하지 않습니다.")
     
-    # 코멘트 생성
-    comment = Comment(content=content, user_id=user_id, event_id=id)
-    
+    comment = Comment(content=content, user_id=user_id, board_id=id)
     session.add(comment)
     session.commit()
     session.refresh(comment)
     
-    return comment  # Comment 모델을 반환
+    return comment
 
 
-# 댓글을 가져오는 엔드포인트 추가
-@event_router.get("/{id}/comments", response_model=List[Comment])
+# 코멘트 삭제 => DELETE /board/{id}/comments/{comment_id} => delete_comment()
+@board_router.delete("/{board_id}/comments/{comment_id}", tags=["Comment"])
+def delete_comment(board_id: int, comment_id: int, session: Session = Depends(get_session)):
+    board = session.get(Board, board_id)
+    if not board:
+        raise HTTPException(status_code=404, detail="게시글이 존재하지 않습니다.")
+    
+    comment = session.get(Comment, comment_id)
+    if comment and comment.board_id == board_id:
+        session.delete(comment)
+        session.commit()
+        return {"message": "코멘트가 정상적으로 삭제되었습니다."}
+    
+    raise HTTPException(status_code=404, detail="코멘트를 찾을 수 없거나 게시글과 일치하지 않습니다.")
+
+
+@board_router.get("/{id}/comments", response_model=List[Comment], tags=["Comment"])
 def get_event_comments(id: int, session=Depends(get_session)) -> List[Comment]:
     # 특정 이벤트에 연결된 댓글 가져오기
     event = (
-        session.query(Event)
-        .options(joinedload(Event.comments))  # Event와 관련된 Comment를 미리 로드
-        .filter(Event.id == id)
+        session.query(Board)
+        .options(joinedload(Board.comments))  # Event와 관련된 Comment를 미리 로드
+        .filter(Board.id == id)
         .first()
     )
 
