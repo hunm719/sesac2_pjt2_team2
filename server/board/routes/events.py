@@ -4,6 +4,7 @@ from database.connection import get_session
 from sqlmodel import select, Session
 from models.events import Event, EventUpdate, Comment
 from sqlalchemy.orm import joinedload
+from fastapi.encoders import jsonable_encoder
 
 
 
@@ -182,3 +183,31 @@ def add_comment(id: int, content: str = Body(...), user_id: int = Body(...), ses
     session.refresh(comment)
     
     return comment  # Comment 모델을 반환
+
+
+# 댓글을 가져오는 엔드포인트 추가
+@event_router.get("/{id}/comments", response_model=List[Comment])
+def get_event_comments(id: int, session=Depends(get_session)) -> List[Comment]:
+    # 특정 이벤트에 연결된 댓글 가져오기
+    event = (
+        session.query(Event)
+        .options(joinedload(Event.comments))  # Event와 관련된 Comment를 미리 로드
+        .filter(Event.id == id)
+        .first()
+    )
+
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"ID {id}에 해당하는 이벤트가 없습니다.",
+        )
+    
+    # 댓글 반환
+    comments = event.comments  # 관계로 불러온 Comment 리스트
+    if not comments:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"ID {id} 이벤트에 댓글이 없습니다.",
+        )
+    
+    return jsonable_encoder(comments)
