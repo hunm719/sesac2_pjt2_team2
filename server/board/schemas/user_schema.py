@@ -20,3 +20,10 @@ class UserResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class UserLogin(BaseModel):
+    user_id: str
+    password: str
+
+    class Config:
+        orm_mode = True
