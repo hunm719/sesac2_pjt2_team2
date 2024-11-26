@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 # User 관련 라우터 추가
-app.include_router(user_router, prefix="/user")
+app.include_router(user_router, prefix="/user", tags=["User"])
 
 if __name__ == "__main__":
     import uvicorn
