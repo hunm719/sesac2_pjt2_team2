@@ -1,4 +1,6 @@
 from sqlmodel import create_engine, SQLModel, Session
+# from board.models.roles import Role
+# from board.models.permissions import Permission
 
 database_file = "database.db"
 database_connection_string = f"sqlite:///{database_file}"

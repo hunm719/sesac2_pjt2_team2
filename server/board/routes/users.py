@@ -12,13 +12,24 @@ hash_password = HashPassword()
 @user_router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def sign_new_user(data: UserSignUp, session=Depends(get_session)) -> dict:
     
+    # 이메일 중복 검사
     statement = select(User).where(User.email == data.email)
     user = session.exec(statement).first()
     if user:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="이미 존재하는 아이디입니다."
+            status_code=status.HTTP_409_CONFLICT, detail="이미 존재하는 이메일입니다."
+        )
+    
+    # 아이디 중복 검사
+    statement = select(User).where(User.username == data.username)
+    user_by_username = session.exec(statement).first()
+    if user_by_username:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="이미 존재하는 아이디입니다."
         )
 
+    # 사용자 생성
     new_user = User(email=data.email, password=hash_password.hash_password(data.password), username=data.username, events=[])
     session.add(new_user)
     session.commit()
