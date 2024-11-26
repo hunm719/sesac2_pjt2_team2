@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #chatBox { border: 1px solid #ccc; padding: 10px; max-height: 300px; overflow-y: scroll; }
+        .user-message { color: blue; margin: 5px 0; }
+        .ai-message { color: green; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>AI Chat Test</h1>
+    <div id="chatBox"></div>
+    <input type="text" id="userMessage" placeholder="Type your message..." />
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        async function sendMessage() {
+            const userMessage = document.getElementById("userMessage").value;
+
+            // Fetch 요청을 보낼 때 CORS 문제 해결
+            const response = await fetch("http://127.0.0.1:8000/api/chat", {
+                method: "POST",  // POST 요청
+                headers: {
+                    "Content-Type": "application/json", // JSON 형식으로 요청
+                },
+                body: JSON.stringify({ message: userMessage, role: "friendly" }) // 메시지 내용
+            });
+
+            const data = await response.json();
+            const aiMessage = data.reply;
+
+            const chatBox = document.getElementById("chatBox");
+            chatBox.innerHTML += `<div class="user-message">User: ${userMessage}</div>`;
+            chatBox.innerHTML += `<div class="ai-message">AI: ${aiMessage}</div>`;
+            document.getElementById("userMessage").value = "";
+        }
+    </script>
+</body>
+</html>
