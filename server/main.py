@@ -1,20 +1,32 @@
-# main.py
 from fastapi import FastAPI
-from board.routes import post_routes
-from board.routes import user_routes
-from board.database import engine, Base
+from board.routes.events import board_router
+from board.routes.users import user_router
+from contextlib import asynccontextmanager
+from board.database.connection import conn
+from fastapi.middleware.cors import CORSMiddleware  
 
-# 데이터베이스 초기화
-Base.metadata.create_all(bind=engine)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    conn()
+    yield
 
-app = FastAPI()
 
-# 게시글 관련 라우터 추가
-app.include_router(post_routes.router, prefix="/posts", tags=["posts"])
+app = FastAPI(lifespan=lifespan)
+
+app.include_router(board_router, prefix="/event", tags=["Event"])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "DELETE", "PUT", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 # User 관련 라우터 추가
-app.include_router(user_routes.router, prefix="/api/users", tags=["Users"])
+app.include_router(user_router, prefix="/user")
 
-@app.get("/")
-def read_root():
-    return {"message": "fastapi가 잘 작동됩니다"}
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

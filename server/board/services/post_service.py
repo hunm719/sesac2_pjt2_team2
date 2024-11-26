@@ -1,6 +1,6 @@
 # board/services/post_service.py
 from sqlalchemy.orm import Session
-from board.models.board_model import Post, Comment
+from board.models.events import Post, Comment
 from board.schemas.post_schema import PostCreate, CommentCreate
 from fastapi import HTTPException
 
