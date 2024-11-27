@@ -7,6 +7,8 @@ import pytz
 from sqlalchemy import DateTime, types, func, String
 from sqlalchemy.orm import validates
 
+
+
 # TimeZone을 처리하기 위한 커스텀 타입 정의
 class KSTDateTime(types.TypeDecorator):
     impl = DateTime
