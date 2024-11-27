@@ -32,7 +32,7 @@ class KSTDateTime(types.TypeDecorator):
 
 class Board(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
-    user_id: str = Field(..., max_length=50)  # 게시판의 작성자 ID (VARCHAR(50))
+    user_id: int = Field(foreign_key="user.id")  # 게시판의 작성자 ID (VARCHAR(50))
     title: str = Field(..., max_length=50)  # 게시판 제목 (VARCHAR(50))
     description: str = Field(..., max_length=255)  # 게시판 설명 (VARCHAR(255))
     imgUrl: str = Field(..., max_length=255)  # 게시판 이미지 URL (VARCHAR(255))

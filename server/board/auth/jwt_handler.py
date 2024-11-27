@@ -1,16 +1,17 @@
 from time import time
 from fastapi import HTTPException, status
-from jose import jwt
+from jose import jwt, JWTError
 from board.database.connection import Settings
 
 
 settings = Settings()
 
 # JWT 토큰 생성
-def create_jwt_token(email: str, user_id: int) -> str:
-    payload = {"user": email, "user_id": user_id, "role": role, "iat": time(), "exp": time() + 3600}
+def create_jwt_token(email: str, user_id: int, role: str = "user") -> str:
+    payload = {"user": email, "user_id": user_id, "role": role, "iat": time(), "exp": time() + 1800}
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
     return token
+
 
 # JWT 토큰 검증
 def verify_jwt_token(token: str):
@@ -27,5 +28,8 @@ def verify_jwt_token(token: str):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found in token")
         
         return payload
-    except:
+    except JWTError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+

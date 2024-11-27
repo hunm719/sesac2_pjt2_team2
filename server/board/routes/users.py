@@ -5,13 +5,18 @@ from board.database.connection import get_session
 from sqlmodel import select, delete
 from board.auth.hash_password import HashPassword
 from board.auth.jwt_handler import create_jwt_token
-from board.auth.authenticate import get_current_user_role
+from board.auth.authenticate import authenticate, get_current_user_role
 from board.models.roles import Role
 from board.models.permissions import Permission
 from typing import List
 
 user_router = APIRouter()
 hash_password = HashPassword()
+
+@user_router.get("/me")
+async def get_current_user(user_id: int = Depends(authenticate)):
+    # 사용자 정보를 가져오는 로직
+    return {"user_id": user_id}
 
 # 사용자 등록
 @user_router.post("/signup", status_code=status.HTTP_201_CREATED)
