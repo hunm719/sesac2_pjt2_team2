@@ -7,7 +7,6 @@ import pytz
 from sqlalchemy import DateTime, types, func
 from sqlalchemy.orm import validates
 
-
 # TimeZone을 처리하기 위한 커스텀 타입 정의
 class KSTDateTime(types.TypeDecorator):
     impl = DateTime
@@ -38,8 +37,10 @@ class Board(SQLModel, table=True):
     description: str = Field(..., max_length=255)  # 게시판 설명 (VARCHAR(255))
     imgUrl: str = Field(..., max_length=255)  # 게시판 이미지 URL (VARCHAR(255))
     likes: int = Field(default=0)  # 좋아요 수 (INT)
-    comments: list["Comment"] = Relationship(back_populates="board")  # 댓글들
     tag: List[str] = Field(sa_column=Column(JSON))  # 태그 (JSON 배열)
+    comments: list["Comment"] = Relationship(back_populates="board")  # 댓글들
+    user: Optional["User"] = Relationship(back_populates="boards")
+
     # 생성 시 UTC 시간으로 저장 (분 단위까지)
     created_at: datetime = Field(default_factory=lambda: datetime.utcnow().replace(tzinfo=pytz.UTC).replace(second=0, microsecond=0))
     
@@ -120,6 +121,18 @@ class Comment(SQLModel, table=True):
             obj.created_at = pytz.UTC.localize(obj.created_at)
         return super().from_orm(obj)
 
+# 유저 모델 (User 클래스)
+class User(SQLModel, table=True):
+    __tablename__ = "users"  # 테이블 이름 명시
+
+    id: int = Field(default=None, primary_key=True)
+    username: str = Field(..., max_length=50)
+    email: str = Field(..., unique=True)
+    hashed_password: str = Field(...)
+    boards: List[Board] = Relationship(back_populates="user")  # Board와 양방향 관계 설정
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 # 양방향 관계 설정
 Comment.board = Relationship(back_populates="comments")

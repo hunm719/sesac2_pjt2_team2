@@ -1,6 +1,6 @@
-# from enum import Enum
+from enum import Enum
 
-# class Role(str, Enum):
-#     guest = "guest"
-#     user = "user"
-#     admin = "admin"
+class Role(str, Enum):
+    guest = "guest"
+    user = "user"
+    admin = "admin"

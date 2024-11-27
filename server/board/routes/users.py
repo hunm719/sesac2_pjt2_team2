@@ -4,6 +4,9 @@ from board.database.connection import get_session
 from sqlmodel import select, delete
 from board.auth.hash_password import HashPassword
 from board.auth.jwt_handler import create_jwt_token
+from board.auth.authenticate import get_current_user_role
+from board.models.roles import Role
+from board.models.permissions import Permission
 
 user_router = APIRouter()
 hash_password = HashPassword()
@@ -59,9 +62,12 @@ async def sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
         "access_token": create_jwt_token(user.email, user.id)
     }
 
-@user_router.put("/{user_id}", status_code=status.HTTP_200_OK)
-async def update_user(user_id: int, data: UserSignUp, session=Depends(get_session)):
-    statement = select(User).where(User.id == user_id)
+# 사용자 정보 수정 (username으로 조회)
+@user_router.put("/{username}", status_code=status.HTTP_200_OK)
+async def update_user(username: str, data: UserSignUp, session=Depends(get_session), user_role: Role = Depends(get_current_user_role)):
+    Permission.can_update_user(user_role, username, user_role)
+
+    statement = select(User).where(User.username == username)
     user = session.exec(statement).first()
     if not user:
         raise HTTPException(
@@ -79,10 +85,12 @@ async def update_user(user_id: int, data: UserSignUp, session=Depends(get_sessio
     session.commit()
     return {"message": "사용자 정보가 성공적으로 업데이트되었습니다."}
 
-# 사용자 조회 (user_id로 조회)
-@user_router.get("/{user_id}", status_code=status.HTTP_200_OK)
-async def get_user(user_id: int, session=Depends(get_session)) -> dict:
-    statement = select(User).where(User.id == user_id)
+# 사용자 조회 (username으로 조회)
+@user_router.get("/{username}", status_code=status.HTTP_200_OK)
+async def get_user(username: str, session=Depends(get_session), user_role: Role = Depends(get_current_user_role)) -> dict:
+    Permission.can_view_user(user_role)
+
+    statement = select(User).where(User.username == username)
     user = session.exec(statement).first()
     if not user:
         raise HTTPException(
@@ -92,10 +100,12 @@ async def get_user(user_id: int, session=Depends(get_session)) -> dict:
     
     return {"email": user.email, "username": user.username}
 
-# 사용자 삭제 (user_id로 삭제)
-@user_router.delete("/{user_id}", status_code=status.HTTP_200_OK)
-async def delete_user(user_id: int, session=Depends(get_session)) -> dict:
-    statement = select(User).where(User.id == user_id)
+# 사용자 삭제 (username으로 삭제)
+@user_router.delete("/{username}", status_code=status.HTTP_200_OK)
+async def delete_user(username: str, session=Depends(get_session), user_role: Role = Depends(get_current_user_role)) -> dict:
+    Permission.can_delete_user(user_role)
+
+    statement = select(User).where(User.username == username)
     user = session.exec(statement).first()
     if not user:
         raise HTTPException(
