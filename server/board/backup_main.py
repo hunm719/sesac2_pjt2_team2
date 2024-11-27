@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from routes.events import board_router
+from board.routes.events import board_router
 from contextlib import asynccontextmanager
-from database.connection import conn
+from board.database.connection import conn
 from fastapi.middleware.cors import CORSMiddleware  
 
 
