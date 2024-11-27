@@ -1,4 +1,9 @@
 from sqlmodel import create_engine, SQLModel, Session
+<<<<<<< HEAD
+=======
+# from board.models.roles import Role
+# from board.models.permissions import Permission
+>>>>>>> BE
 
 database_file = "database.db"
 database_connection_string = f"sqlite:///{database_file}"
@@ -17,3 +22,9 @@ def get_session():
     # Session => 데이터베이스와 상호작용(CRUD)을 관리하는 객체
     with Session(engine_url) as session:
         yield session
+<<<<<<< HEAD
+=======
+
+class Settings:
+    SECRET_KEY = "your_secret_key_here"
+>>>>>>> BE
