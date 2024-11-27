@@ -1,14 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Body, Depends
 from typing import List
-<<<<<<< HEAD
-from database.connection import get_session
-from sqlmodel import select, Session
-from models.events import Board, BoardUpdate, Comment
-=======
 from board.database.connection import get_session
 from sqlmodel import select, Session
 from board.models.events import Board, BoardUpdate, Comment
->>>>>>> BE
 from sqlalchemy.orm import joinedload
 from fastapi.encoders import jsonable_encoder
 
@@ -151,8 +145,4 @@ def get_event_comments(id: int, session=Depends(get_session)) -> List[Comment]:
             detail=f"ID {id} 이벤트에 댓글이 없습니다.",
         )
     
-<<<<<<< HEAD
     return jsonable_encoder(comments)
-=======
-    return jsonable_encoder(comments)
->>>>>>> BE

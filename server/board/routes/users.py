@@ -2,11 +2,11 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from board.models.users import User, UserSignIn, UserSignUp
 from board.database.connection import get_session
 from sqlmodel import select, delete
-from board.auth.hash_password import HashPassword
-from board.auth.jwt_handler import create_jwt_token
+# from board.auth.hash_password import HashPassword
+# from board.auth.jwt_handler import create_jwt_token
 
 user_router = APIRouter()
-hash_password = HashPassword()
+# hash_password = HashPassword()
 
 # 사용자 등록
 @user_router.post("/signup", status_code=status.HTTP_201_CREATED)
