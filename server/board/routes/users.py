@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from board.models.users import User, UserSignIn, UserSignUp
+from board.models.events import User
+from board.models.users import UserSignIn, UserSignUp
 from board.database.connection import get_session
 from sqlmodel import select, delete
 from board.auth.hash_password import HashPassword
@@ -7,6 +8,7 @@ from board.auth.jwt_handler import create_jwt_token
 from board.auth.authenticate import get_current_user_role
 from board.models.roles import Role
 from board.models.permissions import Permission
+from typing import List
 
 user_router = APIRouter()
 hash_password = HashPassword()

@@ -123,12 +123,15 @@ class Comment(SQLModel, table=True):
 
 # 유저 모델 (User 클래스)
 class User(SQLModel, table=True):
-    __tablename__ = "users"  # 테이블 이름 명시
 
     id: int = Field(default=None, primary_key=True)
-    username: str = Field(..., max_length=50)
+    user_id: str = Field(..., max_length=20)
+    user_password: str = Field(...)
+    name: str = Field(..., max_length=50)
+    nickname: str = Field(..., max_length=20)
     email: str = Field(..., unique=True)
-    hashed_password: str = Field(...)
+    user_img: str = Field(...) # 이미지 등록 안 하면 기본 이미지로 설정되도록 수정하면 좋을듯
+
     boards: List[Board] = Relationship(back_populates="user")  # Board와 양방향 관계 설정
 
     def __init__(self, **kwargs):

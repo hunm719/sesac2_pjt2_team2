@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from board.routes.events import board_router
 from board.routes.users import user_router
+from board.routes.admin import admin_router
 from contextlib import asynccontextmanager
 from board.database.connection import conn
 from fastapi.middleware.cors import CORSMiddleware  
@@ -23,8 +24,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# User 관련 라우터 추가
 app.include_router(user_router, prefix="/user", tags=["User"])
+app.include_router(admin_router, prefix="/admin", tags=["admin"])
 
 if __name__ == "__main__":
     import uvicorn
