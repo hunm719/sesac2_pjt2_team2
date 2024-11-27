@@ -13,7 +13,37 @@ from typing import List
 user_router = APIRouter()
 hash_password = HashPassword()
 
-# 사용자 등록
+# # 사용자 등록
+# @user_router.post("/signup", status_code=status.HTTP_201_CREATED)
+# async def sign_new_user(data: UserSignUp, session=Depends(get_session)) -> dict:
+    
+#     # 이메일 중복 검사
+#     statement = select(User).where(User.email == data.email)
+#     user = session.exec(statement).first()
+#     if user:
+#         raise HTTPException(
+#             status_code=status.HTTP_409_CONFLICT, detail="이미 존재하는 이메일입니다."
+#         )
+    
+#     # 아이디 중복 검사
+#     statement = select(User).where(User.username == data.username)
+#     user_by_username = session.exec(statement).first()
+#     if user_by_username:
+#         raise HTTPException(
+#             status_code=status.HTTP_409_CONFLICT,
+#             detail="이미 존재하는 아이디입니다."
+#         )
+
+#     # 사용자 생성
+#     new_user = User(email=data.email, password=hash_password.hash_password(data.user_password), username=data.username, events=[])
+#     #data.password를 data.user_password로 변경
+#     session.add(new_user)
+#     session.commit()
+    
+#     return {"message": "정상적으로 등록되었습니다."}
+
+###############위에서 아래 코드로 변경 테스트입니다. 일단 작동합니다.
+
 @user_router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def sign_new_user(data: UserSignUp, session=Depends(get_session)) -> dict:
     
@@ -34,8 +64,20 @@ async def sign_new_user(data: UserSignUp, session=Depends(get_session)) -> dict:
             detail="이미 존재하는 아이디입니다."
         )
 
+    # 비밀번호 해싱
+    hashed_password = hash_password.hash_password(data.user_password)  # user_password 사용
+
     # 사용자 생성
-    new_user = User(email=data.email, password=hash_password.hash_password(data.password), username=data.username, events=[])
+    new_user = User(
+        user_id=data.user_id,  # user_id는 필수
+        user_password=hashed_password,  # 비밀번호는 해시화하여 저장
+        username=data.username,
+        nickname=data.nickname,
+        email=data.email,
+        user_img=data.user_img  # user_img 추가
+    )
+    
+    # 데이터베이스에 사용자 추가
     session.add(new_user)
     session.commit()
     
@@ -53,15 +95,18 @@ async def sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
             detail="일치하는 아이디가 존재하지 않습니다.",
         )
 
-    if hash_password.verify_password(data.password, user.password) == False:
+
+# 아래에 data.password를 data.user_password로 변경했습니다. user.password도 user.user_password로 변경
+    if hash_password.verify_password(data.user_password, user.user_password) == False:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="패스워드가 일치하지 않습니다.",
         )
 
+#아래에 토큰부분에 user.role을 추가했습니다.
     return {
         "message": "로그인에 성공했습니다.", 
-        "access_token": create_jwt_token(user.email, user.id)
+        "access_token": create_jwt_token(user.email, user.id, user.role)
     }
 
 # 사용자 정보 수정 (username으로 조회)

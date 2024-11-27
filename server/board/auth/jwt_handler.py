@@ -2,7 +2,8 @@ from time import time
 from fastapi import HTTPException, status
 from jose import jwt
 from board.database.connection import Settings
-
+from board.models.roles import Role
+#Role 임포트 했습니다.
 
 settings = Settings()
 
@@ -25,6 +26,16 @@ def verify_jwt_token(token: str):
         role = payload.get("role")
         if role is None:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Role not found in token")
+        
+        # 아래는 추가된 내용입니다.
+        try:
+            role = Role(role)
+        except ValueError:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid role in token")
+        # 문자열을 Role Enum으로 변환합니다.
+
+
+
         
         return payload
     except:
