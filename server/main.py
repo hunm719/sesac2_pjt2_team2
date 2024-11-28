@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv 
 import os
 
+from fastapi.staticfiles import StaticFiles
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     conn()
@@ -39,3 +41,6 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+
+#이미지 url 문제 해결용
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
