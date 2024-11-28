@@ -79,9 +79,8 @@ class Comment(SQLModel, table=True):
             obj.created_at = pytz.UTC.localize(obj.created_at)
         return super().from_orm(obj)
 
-# 유저 모델 (User 클래스)
+# 유저 계정
 class User(SQLModel, table=True):
-
     id: int = Field(default=None, primary_key=True)
     user_id: str = Field(..., max_length=20)
     user_password: str = Field(...)
@@ -99,6 +98,13 @@ class User(SQLModel, table=True):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+# 관리자 계정
+class Admin(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    admin_id: str = Field(..., max_length=20)
+    admin_password: str = Field(...)
+    role: str = Field(..., sa_column=Column("role", String))
 
 # 양방향 관계 설정
 Comment.board = Relationship(back_populates="comments")

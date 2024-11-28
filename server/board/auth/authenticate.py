@@ -18,16 +18,13 @@ def authenticate(token: str = Depends(oauth2_scheme)):
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = verify_jwt_token(token)  # JWT 검증 함수
-        print(f"Current user payload: {payload}")  # 디버깅
 
         return {
             "user_id": payload["user_id"], 
             "role": payload["role"], 
-            "username": payload["username"], 
             "email": payload["email"], 
-            "nickname": payload["nickname"], 
-            "user_img": payload["user_img"]
+            
         }
     except Exception as e:
-        print(f"Get current user error: {e}")  # 디버깅
+        
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다.")
