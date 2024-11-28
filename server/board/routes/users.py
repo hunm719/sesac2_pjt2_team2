@@ -103,6 +103,7 @@ async def get_userInfo(session=Depends(get_session)) -> List[dict]:
     # 모든 사용자 정보를 반환
     return [
         {
+            "id": user.id,
             "user_id": user.user_id,
             "username": user.username,
             "nickname": user.nickname,
@@ -129,6 +130,8 @@ async def update_user(
         )
 
     # 업데이트
+    user.user_id = data.user_id or user.user_id
+    user.username = data.username or user.username
     user.nickname = data.nickname or user.nickname
     user.email = data.email or user.email
     user.user_img = data.user_img or user.user_img
