@@ -17,7 +17,7 @@ import uuid, os
 
 from board.models.users import UserSignIn, UserSignUp
 from board.models.events import User
-
+from sqlalchemy import desc
 
 
 user_router = APIRouter()
@@ -29,10 +29,17 @@ UPLOAD_DIR = Path("uploads/")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # 게시판 전체 조회 => GET /board/ => retrieve_all_boards()
+# @board_router.get("/", response_model=List[Board])
+# def retrieve_all_boards(session=Depends(get_session)) -> List[Board]:
+#     statement = select(Board)
+#     boards = session.exec(statement)
+#     return boards
 @board_router.get("/", response_model=List[Board])
-def retrieve_all_boards(session=Depends(get_session)) -> List[Board]:
+def retrieve_all_boards(sort: bool = False, session=Depends(get_session)) -> List[Board]:
     statement = select(Board)
-    boards = session.exec(statement)
+    if sort:
+        statement = statement.order_by(desc(Board.created_at))
+    boards = session.exec(statement).all()
     return boards
 
 
@@ -369,3 +376,14 @@ def toggle_like(board_id: int, user_id: int, db: Session = Depends(get_session))
     
     db.commit()  # 게시글의 변경사항 저장
     return {"message": action, "like_count": board.likes}
+
+@board_router.get("/board/popular", response_model=Board)
+def get_popular_board(db: Session = Depends(get_session)):
+    # likes가 가장 큰 게시글 하나를 가져오기
+    popular_board = db.query(Board).order_by(Board.likes.desc()).first()
+
+    if not popular_board:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="인기 게시글이 존재하지 않습니다.")
+    
+    return popular_board
+
