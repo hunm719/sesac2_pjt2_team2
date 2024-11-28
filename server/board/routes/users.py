@@ -54,7 +54,8 @@ async def sign_new_user(data: UserSignUp, session=Depends(get_session)) -> dict:
         username=data.username,
         nickname=data.nickname,
         email=data.email,
-        user_img=data.user_img  # user_img 추가
+        user_img=data.user_img,  # user_img 추가
+        role= "user"
     )
     
     # 데이터베이스에 사용자 추가
