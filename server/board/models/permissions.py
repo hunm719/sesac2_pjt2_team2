@@ -65,25 +65,17 @@ class Permission:
         return True
 
     @staticmethod
-    def can_update_user(user_role: Role, user_id: int, target_user_id: int) -> bool:
-        """유저 정보 수정 권한"""
-        if user_role == Role.admin:
-            return True
-        if user_role == Role.user and user_id == target_user_id:
-            return True
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="유저 정보를 수정할 권한이 없습니다."
-        )
+    def can_update_user(role, user_id, current_user_id):
+        if role != "admin" and user_id != current_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="권한이 없습니다."
+            )
 
     @staticmethod
-    def can_delete_user(user_role: Role, user_id: int, target_user_id: int) -> bool:
-        """유저 삭제 권한"""
-        if user_role == Role.admin:
-            return True
-        if user_role == Role.user and user_id == target_user_id:
-            return True
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="유저 정보를 삭제할 권한이 없습니다."
-        )
+    def can_delete_user(role):
+        if role != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="권한이 없습니다."
+            )
