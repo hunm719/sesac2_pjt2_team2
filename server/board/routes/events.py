@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Body, Depends, UploadFile,
 from typing import List
 from board.database.connection import get_session
 from sqlmodel import select, Session
-from board.models.events import Board, BoardUpdate, Comment
+from board.models.events import Board, BoardUpdate, Comment, Like
 from sqlalchemy.orm import joinedload
 from fastapi.encoders import jsonable_encoder
 #, UploadFile, File 추가, 아래 추가
@@ -17,6 +17,8 @@ import uuid, os
 
 from board.models.users import UserSignIn, UserSignUp
 from board.models.events import User
+
+
 
 user_router = APIRouter()
 
@@ -333,3 +335,37 @@ def delete_image(id: int, session: Session = Depends(get_session)):
     session.commit()
 
     return {"detail": f"ID가 {id}인 게시글의 이미지가 삭제되었습니다."}
+
+# likes 에 대한 반응
+@board_router.post("/like/{board_id}")
+def toggle_like(board_id: int, user_id: int, db: Session = Depends(get_session)):
+    # 게시글 조회
+    board = db.query(Board).filter(Board.id == board_id).first()
+
+    # 게시글이 존재하지 않으면 오류 처리
+    if not board:
+        return {"message": "Board not found"}, 404
+
+    # 게시글과 유저에 대한 좋아요 상태 확인
+    like = db.query(Like).filter(Like.board_id == board_id, Like.user_id == user_id).first()
+
+    if like:
+        # 이미 좋아요를 눌렀으면, 좋아요를 취소
+        db.delete(like)
+        db.commit()
+        action = "unliked"
+        
+        # 좋아요 수 감소
+        board.likes -= 1
+    else:
+        # 좋아요를 눌렀으면, 새로운 좋아요 추가
+        new_like = Like(board_id=board_id, user_id=user_id)
+        db.add(new_like)
+        db.commit()
+        action = "liked"
+        
+        # 좋아요 수 증가
+        board.likes += 1
+    
+    db.commit()  # 게시글의 변경사항 저장
+    return {"message": action, "like_count": board.likes}

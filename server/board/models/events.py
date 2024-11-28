@@ -22,11 +22,14 @@ class Board(SQLModel, table=True):
     title: str = Field(..., max_length=50)  # 게시판 제목 (VARCHAR(50))
     description: str = Field(..., max_length=255)  # 게시판 설명 (VARCHAR(255))
     imgUrl: str = Field(..., max_length=255)  # 게시판 이미지 URL (VARCHAR(255))
-    likes: int = Field(default=0)  # 좋아요 수 (INT)
+    likes: Optional[int] = Field(default=0)  # 좋아요 수 (INT)
     tag: List[str] = Field(sa_column=Column(JSON))  # 태그 (JSON 배열)
     comments: list["Comment"] = Relationship(back_populates="board")  # 댓글들
     user: Optional["User"] = Relationship(back_populates="boards")
-
+ 
+    @property
+    def like_count(self):
+        return self.likes_count or 0  # 값이 없으면 0을 반환
 
 #아래는 강사님이 주신 코드 #######################################################
     created_at: datetime = Field(default_factory=lambda: datetime.now(ZoneInfo("Asia/Seoul")))
@@ -108,3 +111,10 @@ class Admin(SQLModel, table=True):
 
 # 양방향 관계 설정
 Comment.board = Relationship(back_populates="comments")
+
+
+
+class Like(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    board_id: int = Field(foreign_key="board.id")  # 게시글의 ID (게시글 테이블의 외래키)
+    user_id: int = Field(foreign_key="user.id")  # 사용자의 ID (사용자 테이블의 외래키)
