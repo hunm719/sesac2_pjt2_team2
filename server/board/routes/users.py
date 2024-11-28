@@ -78,6 +78,7 @@ async def sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
             detail="패스워드가 일치하지 않습니다.",
         )
 
+#아래에 토큰부분에 user.role을 추가했습니다.
     return {
         "message": "로그인에 성공했습니다.", 
         "access_token": create_jwt_token(user.email, user.id, user.role)

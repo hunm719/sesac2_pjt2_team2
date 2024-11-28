@@ -1,6 +1,10 @@
 from sqlmodel import create_engine, SQLModel, Session
+from dotenv import load_dotenv
+import os
 
 class Settings:
+    # 시크릿 키가 들어갈 공간을 넣습니다. .env에서 끌어오게 만들겠습니다. 시크릿키는 env에 넣으면됩니다.
+    SECRET_KEY: str = os.getenv("SECRET_KEY")
     # 데이터베이스 파일과 연결 문자열을 포함한 설정
     database_file = "database.db"
     database_connection_string = f"sqlite:///{database_file}"

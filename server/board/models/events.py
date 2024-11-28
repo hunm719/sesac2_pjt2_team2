@@ -4,8 +4,10 @@ from sqlmodel import SQLModel, Field, Column, JSON
 from sqlmodel import Relationship
 from datetime import datetime, timedelta
 import pytz
-from sqlalchemy import DateTime, types, func
+from sqlalchemy import DateTime, types, func, String
 from sqlalchemy.orm import validates
+
+
 
 # TimeZone을 처리하기 위한 커스텀 타입 정의
 class KSTDateTime(types.TypeDecorator):
@@ -32,7 +34,8 @@ class KSTDateTime(types.TypeDecorator):
 
 class Board(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="user.id")  # 게시판의 작성자 ID (VARCHAR(50))
+    # user_id: str = Field(..., max_length=50)  # 게시판의 작성자 ID (VARCHAR(50)) 기존 
+    user_id: int = Field(foreign_key="user.id")
     title: str = Field(..., max_length=50)  # 게시판 제목 (VARCHAR(50))
     description: str = Field(..., max_length=255)  # 게시판 설명 (VARCHAR(255))
     imgUrl: str = Field(..., max_length=255)  # 게시판 이미지 URL (VARCHAR(255))
@@ -127,10 +130,15 @@ class User(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     user_id: str = Field(..., max_length=20)
     user_password: str = Field(...)
-    name: str = Field(..., max_length=50)
+    username: str = Field(..., max_length=50) # name에서 username으로 변경
     nickname: str = Field(..., max_length=20)
     email: str = Field(..., unique=True)
     user_img: str = Field(...) # 이미지 등록 안 하면 기본 이미지로 설정되도록 수정하면 좋을듯
+    #user_img: Optional[str] = Field(default="default_image.png")  # 기본 이미지 설정
+    #나중에 user_img를 위에걸로 교체
+    #role 추가
+    role: str = Field(..., sa_column=Column("role", String))  # role을 문자열로 저장
+
 
     boards: List[Board] = Relationship(back_populates="user")  # Board와 양방향 관계 설정
 

@@ -1,13 +1,20 @@
-from fastapi import APIRouter, HTTPException, status, Body, Depends
+from fastapi import APIRouter, HTTPException, status, Body, Depends, UploadFile, File
 from typing import List
 from board.database.connection import get_session
 from sqlmodel import select, Session
 from board.models.events import Board, BoardUpdate, Comment
 from sqlalchemy.orm import joinedload
 from fastapi.encoders import jsonable_encoder
+#, UploadFile, File 추가, 아래 추가
+import shutil
+from pathlib import Path
+from fastapi.responses import FileResponse
 
 board_router = APIRouter()
 
+# 이미지 저장 디렉토리 설정(추가)
+UPLOAD_DIR = Path("uploads/")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # 게시판 전체 조회 => GET /board/ => retrieve_all_boards()
 @board_router.get("/", response_model=List[Board])
@@ -146,3 +153,39 @@ def get_event_comments(id: int, session=Depends(get_session)) -> List[Comment]:
         )
     
     return jsonable_encoder(comments)
+
+
+# 이미지 업로드 => POST /board/{id}/image => upload_image()
+@board_router.post("/{id}/image", status_code=status.HTTP_201_CREATED, tags=["Image"])
+async def upload_image(id: int, file: UploadFile = File(...), session: Session = Depends(get_session)):
+    # 게시글이 존재하는지 확인
+    board = session.get(Board, id)
+    if not board:
+        raise HTTPException(status_code=404, detail="게시글이 존재하지 않습니다.")
+    
+    # 파일 저장
+    file_path = UPLOAD_DIR / file.filename
+    with open(file_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    
+    # 파일 URL 반환
+    file_url = f"/board/{id}/image/{file.filename}"
+    
+    # 파일 URL을 게시글에 추가할 수도 있습니다
+    board.imgUrl = file_url
+    session.add(board)
+    session.commit()
+    
+    return {"filename": file.filename, "url": file_url}
+
+# 이미지 조회 => GET /board/{id}/image/{image_name} => get_image()
+@board_router.get("/{id}/image/{image_name}", tags=["Image"])
+def get_image(id: int, image_name: str):
+    # 파일 경로
+    image_path = UPLOAD_DIR / image_name
+    
+    # 파일이 존재하는지 확인
+    if image_path.exists():
+        return FileResponse(image_path)
+    
+    raise HTTPException(status_code=404, detail="이미지를 찾을 수 없습니다.")
