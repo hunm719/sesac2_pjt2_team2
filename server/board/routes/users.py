@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends
+from sqlalchemy.orm import Session
 from board.models.events import User
 from fastapi.security import OAuth2PasswordBearer
 from board.models.users import UserSignIn, UserSignUp
@@ -78,13 +79,10 @@ def sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
 
 # 내 정보 조회
 @user_router.get("/me", status_code=status.HTTP_200_OK)
-async def get_my_userInfo(current_user=Depends(get_current_user)) -> dict:
+async def get_my_userInfo(current_user=Depends(get_current_user), session: Session = Depends(get_session)) -> dict:
     return {
         "user_id": current_user["user_id"],
-        "username": current_user["username"],
-        "nickname": current_user["nickname"],
         "email": current_user["email"],
-        "user_img": current_user["user_img"],
         "role": current_user["role"]
     }
 
