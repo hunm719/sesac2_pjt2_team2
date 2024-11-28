@@ -25,19 +25,13 @@ def create_jwt_token(email: str, user_id: int, role: str) -> str:
 def verify_jwt_token(token: str):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        print(f"Decoded payload: {payload}")  # 디버깅용 출력
         exp = payload.get("exp")
         if exp is None: 
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
         if time() > exp:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Token expired")
-        # # 역할 검증 및 변환
-        # try:
-        #     payload["role"] = Role(payload["role"])  # Role Enum으로 변환
-        # except ValueError:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_400_BAD_REQUEST, 
-        #         detail="유효하지 않은 역할입니다."
-        #     )
+        
         return payload
     
     except:
