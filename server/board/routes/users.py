@@ -16,36 +16,50 @@ hash_password = HashPassword()
 @user_router.get("/me")
 async def get_current_user(user_id: int = Depends(authenticate)):
     # 사용자 정보를 가져오는 로직
+
     return {"user_id": user_id}
+# 이메일 중복 검사 함수
+def check_duplicate_email(session, email):
+
+   statement = select(User).where(User.email == email)
+   if session.exec(statement).first():
+     raise HTTPException(
+         status_code=status.HTTP_409_CONFLICT, detail="이미 존재하는 이메일입니다."
+    )
+
+# 아이디 중복 검사 함수 
+def check_duplicate_username(session, username):
+    
+    statement = select(User).where(User.username == username)
+    if session.exec(statement).first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="이미 존재하는 아이디입니다."
+        )
 
 # 사용자 등록
 @user_router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def sign_new_user(data: UserSignUp, session=Depends(get_session)) -> dict:
-    
-    # 이메일 중복 검사
-    statement = select(User).where(User.email == data.email)
-    user = session.exec(statement).first()
-    if user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="이미 존재하는 이메일입니다."
-        )
-    
-    # 아이디 중복 검사
-    statement = select(User).where(User.username == data.username)
-    user_by_username = session.exec(statement).first()
-    if user_by_username:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="이미 존재하는 아이디입니다."
-        )
+    check_duplicate_email(session, data.email)
+    check_duplicate_username(session, data.username)
 
-    # 사용자 생성
-    new_user = User(email=data.email, password=hash_password.hash_password(data.password), username=data.username, events=[])
+     # 비밀번호 해싱
+    hashed_password = hash_password.hash_password(data.user_password)
+
+     # 사용자 생성
+    new_user = User(
+        user_id=data.user_id,  # user_id는 필수
+        user_password=hashed_password,  # 비밀번호는 해시화하여 저장
+        username=data.username,
+        nickname=data.nickname,
+        email=data.email,
+        user_img=data.user_img  # user_img 추가
+    )
+    
+    # 데이터베이스에 사용자 추가
     session.add(new_user)
     session.commit()
     
-    return {"message": "정상적으로 등록되었습니다."}
-    
+    return {"message": "사용자가 정상적으로 등록되었습니다."}
 
 # 로그인 처리
 @user_router.post("/signin")
@@ -58,7 +72,7 @@ async def sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
             detail="일치하는 아이디가 존재하지 않습니다.",
         )
 
-    if hash_password.verify_password(data.password, user.password) == False:
+    if hash_password.verify_password(data.user_password, user.user_password) == False:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="패스워드가 일치하지 않습니다.",
@@ -66,7 +80,7 @@ async def sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
 
     return {
         "message": "로그인에 성공했습니다.", 
-        "access_token": create_jwt_token(user.email, user.id)
+        "access_token": create_jwt_token(user.email, user.id, user.role)
     }
 
 # 사용자 정보 수정 (username으로 조회)
