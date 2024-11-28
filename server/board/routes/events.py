@@ -64,6 +64,46 @@ def create_board(data: BoardUpdate = Body(...), session: Session = Depends(get_s
     
     return {"message": "게시글이 정상적으로 등록되었습니다.", "data": new_board}
 
+# 게시글 작성 및 이미지 업로드 => POST /board/upload/
+@board_router.post("/upload/", status_code=status.HTTP_201_CREATED)
+def create_board_with_image(
+    title: str = Body(...),
+    description: str = Body(...),
+    tags: List[str] = Body(default=[]),
+    user_id: int = Body(...),
+    file: UploadFile = File(...),
+    session: Session = Depends(get_session),
+):
+    # 파일 확장자 추출
+    extension = Path(file.filename).suffix.lower()
+    if extension not in [".jpg", ".jpeg", ".png", ".gif"]:
+        raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
+
+    # 새 파일 이름 생성
+    new_filename = f"{uuid.uuid4().hex}{extension}"
+    file_path = UPLOAD_DIR / new_filename
+
+    # 파일 저장
+    with open(file_path, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+
+    # 게시글 생성
+    new_board = Board(
+        title=title,
+        description=description,
+        imgUrl=str(file_path),  # 파일 경로 저장
+        tag=tags,
+        user_id=user_id,
+    )
+    session.add(new_board)
+    session.commit()
+    session.refresh(new_board)
+
+    return {
+        "message": "게시글이 정상적으로 등록되었습니다.",
+        "data": new_board,
+        "image_url": str(file_path),
+    }
 
 # 게시글 삭제 => DELETE /board/{id} => delete_board()
 @board_router.delete("/{id}")
@@ -147,7 +187,7 @@ def delete_comment(board_id: int, comment_id: int, session: Session = Depends(ge
     
     raise HTTPException(status_code=404, detail="코멘트를 찾을 수 없거나 게시글과 일치하지 않습니다.")
 
-
+#전체 코멘트 조회
 @board_router.get("/{id}/comments", response_model=List[Comment], tags=["Comment"])
 def get_event_comments(id: int, session=Depends(get_session)) -> List[Comment]:
     # 특정 이벤트에 연결된 댓글 가져오기
@@ -222,6 +262,7 @@ def get_image(id: int, session: Session = Depends(get_session)):
     
     raise HTTPException(status_code=404, detail="이미지를 찾을 수 없습니다.")
 
+#이미지 삭제
 @board_router.delete("/{id}/image", status_code=status.HTTP_204_NO_CONTENT, tags=["Image"])
 def delete_image(id: int, session: Session = Depends(get_session)):
     # 게시글이 존재하는지 확인

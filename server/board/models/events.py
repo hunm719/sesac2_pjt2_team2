@@ -9,27 +9,6 @@ from sqlalchemy.orm import validates
 
 from zoneinfo import ZoneInfo
 
-# # TimeZone을 처리하기 위한 커스텀 타입 정의
-# class KSTDateTime(types.TypeDecorator):
-#     impl = DateTime
-#     cache_ok = True
-
-#     def process_bind_param(self, value, dialect):
-#         if value is None:
-#             return None
-#         if value.tzinfo is None:
-#             return value
-#         return value.astimezone(pytz.UTC)
-
-#     def process_result_value(self, value, dialect):
-#         if value is None:
-#             return None
-#         if value.tzinfo is None:
-#             value = pytz.UTC.localize(value)
-#         return value.astimezone(pytz.timezone('Asia/Seoul'))
-
-
-#KST = timezone('Asia/Seoul')
 
 # 게시판용으로 수정된 모델 정의
 # 기존 Event 모델을 Board로 변경
@@ -46,47 +25,11 @@ class Board(SQLModel, table=True):
     comments: list["Comment"] = Relationship(back_populates="board")  # 댓글들
     user: Optional["User"] = Relationship(back_populates="boards")
 
-    # 생성 시 UTC 시간으로 저장 (분 단위까지)
-    # created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc).replace(second=0, microsecond=0))
-    
-    # # 수정 시 자동으로 현재 시간 업데이트 (분 단위까지)
-    # updated_at: datetime = Field(
-    #     default_factory=lambda: datetime.now(tz=timezone.utc).replace(second=0, microsecond=0),
-    #     sa_column=Column(DateTime, onupdate=func.utc_timestamp())
-    # )
+
 #아래는 강사님이 주신 코드 #######################################################
     created_at: datetime = Field(default_factory=lambda: datetime.now(ZoneInfo("Asia/Seoul")))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(ZoneInfo("Asia/Seoul")), sa_column=Column(DateTime, onupdate=datetime.now))
     
-
-    # @validates('created_at', 'updated_at')
-    # def validate_datetime(self, key, value):
-    #     # 문자열을 datetime 객체로 변환
-    #     if isinstance(value, str):  # 문자열 처리
-    #         try:
-    #             # ISO 8601 포맷에 맞춰 datetime 객체로 변환
-    #             value = datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=pytz.UTC)
-    #         except ValueError:
-    #             raise ValueError(f"Invalid datetime string format: {value}")
-    #     elif isinstance(value, datetime):  # 이미 datetime 객체인 경우
-    #         if value.tzinfo is None:
-    #             value = value.replace(tzinfo=pytz.UTC)
-    #     return value
-
-    # # __init__에서 날짜 필드 강제로 변환
-    # def __init__(self, **kwargs):
-    #     # 강제로 날짜 필드 변환 (created_at, updated_at이 문자열로 전달될 경우)
-    #     for field in ['created_at', 'updated_at']:
-    #         if field in kwargs and isinstance(kwargs[field], str):
-    #             kwargs[field] = self.validate_datetime(field, kwargs[field])
-    #     super().__init__(**kwargs)
-
-    # # 시간 출력 시 분 단위까지만 표시하도록 설정
-    # def formatted_created_at(self):
-    #     return self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else None
-
-    # def formatted_updated_at(self):
-    #     return self.updated_at.strftime('%Y-%m-%d %H:%M') if self.updated_at else None
 
 # 기존 EventUpdate 모델을 수정하여 Board에 맞는 수정 모델 정의
 class BoardUpdate(SQLModel):
