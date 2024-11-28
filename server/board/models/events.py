@@ -2,12 +2,12 @@ from pydantic import BaseModel
 from typing import List, Optional
 from sqlmodel import SQLModel, Field, Column, JSON
 from sqlmodel import Relationship
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pytz
 from sqlalchemy import DateTime, types, func, String
 from sqlalchemy.orm import validates
 
-
+from zoneinfo import ZoneInfo
 
 # TimeZone을 처리하기 위한 커스텀 타입 정의
 class KSTDateTime(types.TypeDecorator):
@@ -29,6 +29,14 @@ class KSTDateTime(types.TypeDecorator):
         return value.astimezone(pytz.timezone('Asia/Seoul'))
 
 
+#KST = timezone('Asia/Seoul')
+
+class BoardInsert(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    title: str = Field(..., max_length=50)  # 게시판 제목 (VARCHAR(50))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(ZoneInfo("Asia/Seoul")))
+
+
 # 게시판용으로 수정된 모델 정의
 # 기존 Event 모델을 Board로 변경
 
@@ -45,10 +53,21 @@ class Board(SQLModel, table=True):
     user: Optional["User"] = Relationship(back_populates="boards")
 
     # 생성 시 UTC 시간으로 저장 (분 단위까지)
-    created_at: datetime = Field(default_factory=lambda: datetime.utcnow().replace(tzinfo=pytz.UTC).replace(second=0, microsecond=0))
+    # created_at: datetime = Field(default_factory=lambda: datetime.now(tz=timezone.utc).replace(second=0, microsecond=0))
     
-    # 수정 시 자동으로 현재 시간 업데이트 (분 단위까지)
-    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow().replace(tzinfo=pytz.UTC).replace(second=0, microsecond=0), sa_column=Column(DateTime, onupdate=func.current_timestamp()))
+    # # 수정 시 자동으로 현재 시간 업데이트 (분 단위까지)
+    # updated_at: datetime = Field(
+    #     default_factory=lambda: datetime.now(tz=timezone.utc).replace(second=0, microsecond=0),
+    #     sa_column=Column(DateTime, onupdate=func.utc_timestamp())
+    # )
+
+    created_at: datetime = Field(
+        sa_column=Column(KSTDateTime, default_factory=lambda: datetime.now(tz=timezone.utc).replace(second=0, microsecond=0))
+    )
+    updated_at: datetime = Field(
+        sa_column=Column(KSTDateTime, default_factory=lambda: datetime.now(tz=timezone.utc).replace(second=0, microsecond=0),
+                         onupdate=func.now())
+    )
 
     @validates('created_at', 'updated_at')
     def validate_datetime(self, key, value):

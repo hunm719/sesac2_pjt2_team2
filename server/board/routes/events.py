@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Body, Depends, UploadFile,
 from typing import List
 from board.database.connection import get_session
 from sqlmodel import select, Session
-from board.models.events import Board, BoardUpdate, Comment
+from board.models.events import Board, BoardUpdate, Comment, BoardInsert
 from sqlalchemy.orm import joinedload
 from fastapi.encoders import jsonable_encoder
 #, UploadFile, File 추가, 아래 추가
@@ -40,11 +40,11 @@ def retrieve_board(id: int, session=Depends(get_session)) -> Board:
 
 # 게시글 등록 => POST /board/ => create_board()
 @board_router.post("/", status_code=status.HTTP_201_CREATED)
-def create_board(data: Board = Body(...), session=Depends(get_session)) -> dict:
+def create_board(data: BoardInsert = Body(...), session=Depends(get_session)) -> dict:
     session.add(data)  # 데이터베이스에 데이터를 추가
     session.commit()  # 변경사항을 저장
     session.refresh(data)  # 최신 데이터로 갱신
-    return {"message": "게시글이 정상적으로 등록되었습니다."}
+    return {"message": "게시글이 정상적으로 등록되었습니다.", "data": data}
 
 
 # 게시글 삭제 => DELETE /board/{id} => delete_board()
