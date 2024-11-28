@@ -35,7 +35,7 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 #     boards = session.exec(statement)
 #     return boards
 @board_router.get("/", response_model=List[Board])
-def retrieve_all_boards(sort: bool = False, session=Depends(get_session)) -> List[Board]:
+def retrieve_all_boards(sort: bool = True, session=Depends(get_session)) -> List[Board]:
     statement = select(Board)
     if sort:
         statement = statement.order_by(desc(Board.created_at))
