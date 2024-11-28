@@ -15,6 +15,11 @@ from zoneinfo import ZoneInfo
 
 import uuid, os
 
+from board.models.users import UserSignIn, UserSignUp
+from board.models.events import User
+
+user_router = APIRouter()
+
 board_router = APIRouter()
 
 # 이미지 저장 디렉토리 설정(추가)
@@ -70,10 +75,23 @@ def create_board_with_image(
     title: str = Body(...),
     description: str = Body(...),
     tags: List[str] = Body(default=[]),
-    user_id: int = Body(...),
+    user_id: str = Body(...),
     file: UploadFile = File(...),
     session: Session = Depends(get_session),
 ):
+    #    # 유저 ID가 존재하는지 데이터베이스에서 확인
+    # user = session.exec(select(User).where(User.id == user_id)).first()
+    
+    # if not user:
+    #     raise HTTPException(status_code=404, detail="유저 ID를 찾을 수 없습니다.")
+
+    # 유저 ID가 존재하는지 UserSignUp 테이블에서 확인
+    user = session.exec(select(User).where(User.user_id == user_id)).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="유저 ID를 찾을 수 없습니다.")
+
+
     # 파일 확장자 추출
     extension = Path(file.filename).suffix.lower()
     if extension not in [".jpg", ".jpeg", ".png", ".gif"]:
