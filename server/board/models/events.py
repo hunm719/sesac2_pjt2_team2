@@ -16,7 +16,9 @@ from zoneinfo import ZoneInfo
 class Board(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     # user_id: str = Field(..., max_length=50)  # 게시판의 작성자 ID (VARCHAR(50)) 기존 
-    user_id: int = Field(foreign_key="user.id")
+    # user_id: int = Field(foreign_key="user.id")
+    user_id: str = Field(foreign_key="user.user_id")  # user_id를 str로 변경
+
     title: str = Field(..., max_length=50)  # 게시판 제목 (VARCHAR(50))
     description: str = Field(..., max_length=255)  # 게시판 설명 (VARCHAR(255))
     imgUrl: str = Field(..., max_length=255)  # 게시판 이미지 URL (VARCHAR(255))
@@ -33,7 +35,7 @@ class Board(SQLModel, table=True):
 
 # 기존 EventUpdate 모델을 수정하여 Board에 맞는 수정 모델 정의
 class BoardUpdate(SQLModel):
-    user_id: int = Field(foreign_key="user.id")
+    user_id: str = Field(foreign_key="user.id")
     title: Optional[str] = None
     description: Optional[str] = None
     imgUrl: Optional[str] = None

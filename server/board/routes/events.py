@@ -74,7 +74,8 @@ def create_board(data: BoardUpdate = Body(...), session: Session = Depends(get_s
 def create_board_with_image(
     title: str = Body(...),
     description: str = Body(...),
-    tags: List[str] = Body(default=[]),
+    # tags: List[str] = Body(default=[]),
+    tags: str = Body(...),  # 쉼표로 구분된 문자열로 받음
     user_id: str = Body(...),
     file: UploadFile = File(...),
     session: Session = Depends(get_session),
@@ -90,6 +91,9 @@ def create_board_with_image(
     
     if not user:
         raise HTTPException(status_code=404, detail="유저 ID를 찾을 수 없습니다.")
+
+   # 태그 분리
+    tag_list = tags.split(",")  # "tag1,tag2,tag3" -> ["tag1", "tag2", "tag3"]
 
 
     # 파일 확장자 추출
@@ -110,7 +114,7 @@ def create_board_with_image(
         title=title,
         description=description,
         imgUrl=str(file_path),  # 파일 경로 저장
-        tag=tags,
+        tag=tag_list,
         user_id=user_id,
     )
     session.add(new_board)
@@ -173,6 +177,23 @@ def update_board(id: int, data: BoardUpdate, session=Depends(get_session)) -> Bo
         status_code=status.HTTP_404_NOT_FOUND,
         detail="일치하는 게시글이 존재하지 않습니다.",
     )
+
+# # 아래건 의미가 없지 않나? 일단 보관..
+# @board_router.put("/update/{board_id}", status_code=status.HTTP_200_OK)
+# def update_board2(board_id: int, board_update: BoardUpdate, session: Session = Depends(get_session)):
+#     # 게시글 찾기
+#     existing_board = session.get(Board, board_id)
+#     if not existing_board:
+#         raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다.")
+
+#     # 게시글 업데이트
+#     updated_board = board_update.update_board(existing_board)
+#     session.add(updated_board)
+#     session.commit()
+#     session.refresh(updated_board)
+
+#     return {"message": "게시글이 성공적으로 업데이트되었습니다.", "data": updated_board}
+
 
 
 # 코멘트 등록 => POST /board/{id}/comments => add_comment()
