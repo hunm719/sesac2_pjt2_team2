@@ -4,8 +4,9 @@ from board.routes.users import user_router
 from board.routes.admin import admin_router
 from contextlib import asynccontextmanager
 from board.database.connection import conn
-from fastapi.middleware.cors import CORSMiddleware  
-# import os
+from fastapi.middleware.cors import CORSMiddleware 
+from dotenv import load_dotenv 
+import os
 # from kakao_auth import get_access_token, get_kakao_user_info
 
 @asynccontextmanager
@@ -14,6 +15,14 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+ # .env 파일을 로드하고 secrey_key 가져오기
+load_dotenv()
+secret_key = os.getenv("SECRET_KEY")
+if secret_key is None:
+    raise ValueError("SECRET_KEY가 설정되지 않았습니다.")
+else:
+    print(f"SECRET_KEY: {secret_key}")  # 값 확인
 
 app.include_router(board_router, prefix="/event", tags=["Event"])
 app.include_router(user_router, prefix="/user", tags=["User"])

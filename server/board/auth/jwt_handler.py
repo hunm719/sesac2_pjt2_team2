@@ -6,13 +6,31 @@ from board.models.roles import Role
 
 settings = Settings()
 
+from typing import Union
+
 # JWT 토큰 생성
 def create_jwt_token(email: str, user_id: int, role: str = "user") -> str:
-
-    payload = {"user": email, "user_id": user_id, "role": role, "iat": time(), "exp": time() + 1800}
-    token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
-
+    payload = {
+        "user": email,
+        "user_id": user_id,
+        "role": role,
+        "iat": time(),  # 발급 시간
+        "exp": time() + 1800,  # 만료 시간 (30분)
+    }
+    
+    # SECRET_KEY 타입 확인
+    secret_key: Union[str, bytes] = settings.SECRET_KEY
+    if not isinstance(secret_key, (str, bytes)):
+        raise ValueError(f"SECRET_KEY는 문자열 또는 바이트여야 합니다. 현재 타입: {type(secret_key)}")
+    
+    # 토큰 생성
+    try:
+        token = jwt.encode(payload, secret_key, algorithm="HS256")
+    except Exception as e:
+        raise RuntimeError(f"JWT 생성 중 오류 발생: {e}")
+    
     return token
+
 
 
 # JWT 토큰 검증

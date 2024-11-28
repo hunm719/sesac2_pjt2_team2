@@ -13,11 +13,7 @@ from typing import List
 user_router = APIRouter()
 hash_password = HashPassword()
 
-@user_router.get("/me")
-async def get_current_user(user_id: int = Depends(authenticate)):
-    # 사용자 정보를 가져오는 로직
 
-    return {"user_id": user_id}
 # 이메일 중복 검사 함수
 def check_duplicate_email(session, email):
 
@@ -35,6 +31,12 @@ def check_duplicate_username(session, username):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="이미 존재하는 아이디입니다."
         )
+
+# 현재 사용자 정보를 가져오기
+@user_router.get("/me")
+async def get_current_user(user_id: int = Depends(authenticate)):
+
+    return {"user_id": user_id}
 
 # 사용자 등록
 @user_router.post("/signup", status_code=status.HTTP_201_CREATED)
@@ -66,22 +68,34 @@ async def sign_new_user(data: UserSignUp, session=Depends(get_session)) -> dict:
 async def sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
     statement = select(User).where(User.email == data.email)
     user = session.exec(statement).first()
+
+    # 아이디 확인
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="일치하는 아이디가 존재하지 않습니다.",
         )
 
-    if hash_password.verify_password(data.user_password, user.user_password) == False:
+    # 패스워드 확인
+    if not hash_password.verify_password(data.user_password, user.user_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="패스워드가 일치하지 않습니다.",
         )
 
-#아래에 토큰부분에 user.role을 추가했습니다.
+    # 토큰 생성
+    try:
+        token = create_jwt_token(user.email, user.id, user.role)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"토큰 생성 중 오류가 발생했습니다: {str(e)}",
+        )
+
+    #아래에 토큰부분에 user.role을 추가했습니다.
     return {
-        "message": "로그인에 성공했습니다.", 
-        "access_token": create_jwt_token(user.email, user.id, user.role)
+        "message": "로그인에 성공했습니다.",
+        "access_token": token
     }
 
 # 사용자 정보 수정 (username으로 조회)
