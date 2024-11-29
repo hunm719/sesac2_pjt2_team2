@@ -137,19 +137,37 @@ def create_board_with_image(
     }
 
 # 게시글 삭제 => DELETE /board/{id} => delete_board()
+# @board_router.delete("/{id}")
+# def delete_board(id: int, session=Depends(get_session)) -> dict:
+#     board = session.get(Board, id)
+#     if board:
+#         session.delete(board)
+#         session.commit()
+#         return {"message": "게시글이 정상적으로 삭제되었습니다."}
+
+#     raise HTTPException(
+#         status_code=status.HTTP_404_NOT_FOUND,
+#         detail="일치하는 게시글이 존재하지 않습니다.",
+#     )
+
 @board_router.delete("/{id}")
 def delete_board(id: int, session=Depends(get_session)) -> dict:
+    # 해당 게시글을 조회
     board = session.get(Board, id)
-    if board:
-        session.delete(board)
-        session.commit()
-        return {"message": "게시글이 정상적으로 삭제되었습니다."}
+    if not board:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="일치하는 게시글이 존재하지 않습니다.",
+        )
 
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="일치하는 게시글이 존재하지 않습니다.",
-    )
+    # 관련된 Comment 삭제
+    session.query(Comment).filter(Comment.board_id == id).delete()
 
+    # 게시글 삭제
+    session.delete(board)
+    session.commit()
+
+    return {"message": "게시글이 정상적으로 삭제되었습니다."}
 
 # 게시글 전체 삭제 => DELETE /board/ => delete_all_boards()
 @board_router.delete("/")
