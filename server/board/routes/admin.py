@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import select
-from board.models.admin import AdminSignUp
+from board.models.admin import AdminSignUp, AdminSignIn
 from board.models.events import Admin
 from board.models.users import UserSignIn
 # from board.models.roles import Role
@@ -30,6 +30,7 @@ async def sign_new_admin(data: AdminSignUp, session=Depends(get_session)) -> dic
     new_admin = Admin(
         admin_id=data.admin_id,
         admin_password=hash_password.hash_password(data.admin_password),
+        email=data.email,
         role="admin"
     )
 
@@ -44,9 +45,9 @@ async def sign_new_admin(data: AdminSignUp, session=Depends(get_session)) -> dic
     
 
 # 관리자 로그인
-@admin_router.post("/signin", response_model=dict)
-async def admin_sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
-    statement = select(Admin).where(Admin.user_id == data.user_id)
+@admin_router.post("/signin")
+def admin_sign_in(data: AdminSignIn, session=Depends(get_session)) -> dict:
+    statement = select(Admin).where(Admin.admin_id == data.admin_id)
     admin = session.exec(statement).first()
     if not admin:
         raise HTTPException(
@@ -54,7 +55,7 @@ async def admin_sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
             detail="아이디가 일치하지 않습니다.",
         )
 
-    if hash_password.verify_password(data.password, admin.password) == False:
+    if hash_password.verify_password(data.admin_password, admin.admin_password) == False:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="패스워드가 일치하지 않습니다.",
@@ -62,74 +63,5 @@ async def admin_sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
 
     return {
         "message": "로그인에 성공했습니다.",
-        "access_token": create_jwt_token(admin.email, admin.id, role= admin)
+        "access_token": create_jwt_token(admin.email, admin.id, admin.role)
     }
-
-# # 사용자 전체 조회
-# @admin_router.get("/users", response_model=List[User])
-# def retrieve_all_users(session=Depends(get_session), user_role: str = Depends(get_current_user_role)) -> List[User]:
-#     Permission.can_view_user(user_role)
-
-#     statement = select(User)
-#     users = session.exec(statement)
-#     return users
-
-
-# # 사용자 조회
-# @admin_router.get("/users/{username}", response_model=User)
-# def get_user(username: str, session=Depends(get_session), user_role: str = Depends(get_current_user_role)) -> dict:
-#     Permission.can_view_user(user_role)
-
-#     statement = select(User).where(User.username == username)
-#     user = session.exec(statement).first()
-#     if not user:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND,
-#             detail="해당 아이디가 존재하지 않습니다."
-#         )
-    
-#     return {"email": user.email, "username": user.username}
-
-
-# # 사용자 정보 수정
-# @admin_router.put("/users/{username}", status_code=status.HTTP_200_OK)
-# async def update_user(username: str, data: UserSignUp, session=Depends(get_session), user_role: str = Depends(get_current_user_role)):
-#     Permission.can_update_user(user_role, username, user_role)
-
-#     statement = select(User).where(User.username == username)
-#     user = session.exec(statement).first()
-#     if not user:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND,
-#             detail="일치하는 아이디가 존재하지 않습니다."
-#         )
-
-#     if data.email != user.email:
-#         user.email = data.email
-#     if data.username != user.username:
-#         user.username = data.username
-#     if data.password:
-#         user.password = hash_password.hash_password(data.password)
-
-#     session.commit()
-#     return {"message": "사용자 정보가 성공적으로 업데이트되었습니다."}
-
-
-# # 사용자 삭제 (username으로 삭제)
-# @admin_router.delete("/users/{username}", status_code=status.HTTP_200_OK)
-# async def delete_user(username: str, session=Depends(get_session), user_role: str = Depends(get_current_user_role)) -> dict:
-#     Permission.can_delete_user(user_role, username, user_role)  # 관리자만 삭제 가능
-
-#     statement = select(User).where(User.username == username)
-#     user = session.exec(statement).first()
-#     if not user:
-#         raise HTTPException(
-#             status_code=status.HTTP_404_NOT_FOUND,
-#             detail="해당 아이디가 존재하지 않습니다."
-#         )
-
-#     session.delete(user)
-#     session.commit()
-    
-#     return {"message": "사용자 정보가 정상적으로 삭제되었습니다."}
-

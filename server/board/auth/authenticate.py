@@ -28,3 +28,4 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     except Exception as e:
         
         raise HTTPException(status_code=401, detail="유효하지 않은 토큰입니다.")
+    

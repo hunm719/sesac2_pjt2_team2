@@ -9,7 +9,9 @@ from board.auth.jwt_handler import create_jwt_token
 from board.auth.hash_password import HashPassword
 from board.auth.authenticate import authenticate, get_current_user
 # from board.models.permissions import Permission
+# from fastapi.security import OAuth2PasswordRequestForm
 from typing import List
+import re
 
 
 user_router = APIRouter()
@@ -31,12 +33,26 @@ def check_duplicate_user_id(session, user_id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="이미 존재하는 아이디입니다."
         )
+    
+# 비밀번호 유효성 검사 함수
+def validate_password(password: str):
+    # 정규식 패턴: 8자리 이상, 알파벳+숫자 조합, 특수문자 포함
+    pattern = r"^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?\":{}|<>]).{8,}$"
+    
+    # 정규식에 맞는지 확인
+    if not re.match(pattern, password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="비밀번호는 8자리 이상, 숫자와 영어의 조합, 특수문자가 하나 이상 포함되어야 합니다."
+        )
+    return True
 
 # 사용자 등록
 @user_router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def sign_new_user(data: UserSignUp, session=Depends(get_session)) -> dict:
     check_duplicate_email(session, data.email)
-    check_duplicate_user_id(session, data.username)
+    check_duplicate_user_id(session, data.user_id)
+    validate_password(data.user_password)
 
     # 사용자 생성
     new_user = User(
@@ -150,7 +166,7 @@ async def update_user(
 
 
 # 사용자 삭제
-@user_router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@user_router.delete("/users/{user_id}", status_code=status.HTTP_200_OK)
 async def delete_user(user_id: str, session=Depends(get_session)):
     statement = select(User).where(User.user_id == user_id)
     user = session.exec(statement).first()

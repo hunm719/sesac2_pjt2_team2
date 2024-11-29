@@ -106,6 +106,7 @@ class User(SQLModel, table=True):
 class Admin(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     admin_id: str = Field(..., max_length=20)
+    email: str = Field(...)
     admin_password: str = Field(...)
     role: str = Field(..., sa_column=Column("role", String))
 
