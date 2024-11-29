@@ -1,4 +1,7 @@
 *.pyc
 __pycache__/
 database.db
-board/venv
+board/venv/
+
+
+!.gitignore
