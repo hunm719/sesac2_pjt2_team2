@@ -9,6 +9,7 @@ from board.auth.jwt_handler import create_jwt_token
 from board.auth.hash_password import HashPassword
 from board.auth.authenticate import authenticate, get_current_user
 # from board.models.permissions import Permission
+# from fastapi.security import OAuth2PasswordRequestForm
 from typing import List
 
 
@@ -150,7 +151,7 @@ async def update_user(
 
 
 # 사용자 삭제
-@user_router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+@user_router.delete("/users/{user_id}", status_code=status.HTTP_200_OK)
 async def delete_user(user_id: str, session=Depends(get_session)):
     statement = select(User).where(User.user_id == user_id)
     user = session.exec(statement).first()

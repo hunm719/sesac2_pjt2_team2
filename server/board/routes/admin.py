@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from sqlmodel import select
-from board.models.admin import AdminSignUp
+from board.models.admin import AdminSignUp, AdminSignIn
 from board.models.events import Admin
 from board.models.users import UserSignIn
 # from board.models.roles import Role
@@ -30,6 +30,7 @@ async def sign_new_admin(data: AdminSignUp, session=Depends(get_session)) -> dic
     new_admin = Admin(
         admin_id=data.admin_id,
         admin_password=hash_password.hash_password(data.admin_password),
+        email=data.email,
         role="admin"
     )
 
@@ -44,9 +45,9 @@ async def sign_new_admin(data: AdminSignUp, session=Depends(get_session)) -> dic
     
 
 # 관리자 로그인
-@admin_router.post("/signin", response_model=dict)
-async def admin_sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
-    statement = select(Admin).where(Admin.user_id == data.user_id)
+@admin_router.post("/signin")
+def admin_sign_in(data: AdminSignIn, session=Depends(get_session)) -> dict:
+    statement = select(Admin).where(Admin.admin_id == data.admin_id)
     admin = session.exec(statement).first()
     if not admin:
         raise HTTPException(
@@ -54,7 +55,7 @@ async def admin_sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
             detail="아이디가 일치하지 않습니다.",
         )
 
-    if hash_password.verify_password(data.password, admin.password) == False:
+    if hash_password.verify_password(data.admin_password, admin.admin_password) == False:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="패스워드가 일치하지 않습니다.",
@@ -62,7 +63,7 @@ async def admin_sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
 
     return {
         "message": "로그인에 성공했습니다.",
-        "access_token": create_jwt_token(admin.email, admin.id, role= admin)
+        "access_token": create_jwt_token(admin.email, admin.id, admin.role)
     }
 
 # # 사용자 전체 조회
