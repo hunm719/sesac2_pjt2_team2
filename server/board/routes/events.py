@@ -225,7 +225,7 @@ def update_board(id: int, data: BoardUpdate, session=Depends(get_session)) -> Bo
 
 # 코멘트 등록 => POST /board/{id}/comments => add_comment()
 @board_router.post("/{id}/comments", status_code=201, response_model=Comment, tags=["Comment"])
-def add_comment(id: int, content: str = Body(...), user_id: int = Body(...), session: Session = Depends(get_session)):
+def add_comment(id: int, content: str = Body(...), user_id: str = Body(...), session: Session = Depends(get_session)):
     board = session.get(Board, id)
     if not board:
         raise HTTPException(status_code=404, detail="게시글이 존재하지 않습니다.")
@@ -363,7 +363,7 @@ def delete_image(id: int, session: Session = Depends(get_session)):
 
 # likes 에 대한 반응
 @board_router.post("/like/{board_id}")
-def toggle_like(board_id: int, user_id: int, db: Session = Depends(get_session)):
+def toggle_like(board_id: int, user_id: str, db: Session = Depends(get_session)):
     # 게시글 조회
     board = db.query(Board).filter(Board.id == board_id).first()
 
