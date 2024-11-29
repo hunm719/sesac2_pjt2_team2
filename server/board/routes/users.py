@@ -80,10 +80,19 @@ def sign_in(data: UserSignIn, session=Depends(get_session)) -> dict:
 # 내 정보 조회
 @user_router.get("/me", status_code=status.HTTP_200_OK)
 async def get_my_userInfo(current_user=Depends(get_current_user), session: Session = Depends(get_session)) -> dict:
+    user_id = current_user["user_id"]
+
+    # DB에서 user_id를 기준으로 사용자 정보를 조회
+    user = session.query(User).filter(User.id == user_id).first()
+
     return {
-        "user_id": current_user["user_id"],
-        "email": current_user["email"],
-        "role": current_user["role"]
+        "id": user.id,
+        "user_id": user.user_id,
+        "username": user.username,
+        "nickname": user.nickname,
+        "email": user.email,
+        "user_img": user.user_img,
+        "role": user.role
     }
 
 # 사용자 모두 조회
