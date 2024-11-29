@@ -12,7 +12,7 @@ def create_jwt_token(email: str, user_id: str, role: str) -> str:
         "email": email,
         "role": role,
         "iat": time(),
-        "exp": time() + 3600
+        "exp": time() + 360000
     }
     token = jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
     return token

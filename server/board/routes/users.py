@@ -92,7 +92,8 @@ async def get_my_userInfo(current_user=Depends(get_current_user), session: Sessi
         "nickname": user.nickname,
         "email": user.email,
         "user_img": user.user_img,
-        "role": user.role
+        "role": user.role,
+        "board" : user.boards
     }
 
 # 사용자 모두 조회
