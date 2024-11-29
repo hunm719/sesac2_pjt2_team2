@@ -405,3 +405,21 @@ def get_popular_board(db: Session = Depends(get_session)):
     
     return popular_board
 
+#likes 강제수정
+@board_router.put("/boards/{board_id}/like")
+async def update_likes(board_id: int, new_likes: int, db: Session = Depends(get_session)):
+    # 게시판 조회
+    board = db.exec(select(Board).where(Board.id == board_id)).first()
+    
+    if not board:
+        raise HTTPException(status_code=404, detail="Board not found")
+    
+    # 좋아요 수 직접 변경
+    board.likes = new_likes  # 사용자로부터 받은 값으로 좋아요 수 업데이트
+    board.updated_at = datetime.now(ZoneInfo("Asia/Seoul"))  # 수정 시간 업데이트
+    
+    # 변경 사항 저장
+    db.add(board)
+    db.commit()
+    
+    return {"message": "Likes updated", "new_likes": board.likes}
